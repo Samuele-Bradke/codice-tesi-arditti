@@ -1,0 +1,15 @@
+services:
+  neo4j:
+    image: neo4j:2025.03.0
+    container_name: neo4j
+    restart: always
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - /home/samu/neo4j:/data
+    environment:
+      - NEO4J_AUTH=neo4j/your_password
+      - NEO4JLABS_PLUGINS='["apoc"]'
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.* 

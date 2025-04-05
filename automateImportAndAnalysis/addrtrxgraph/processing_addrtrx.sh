@@ -6,11 +6,11 @@
 
 # NB: gli indirizzi casuali sono salvati in $NEO4J_HOME/import/ tramite procedura apoc.export.csv.query invocata in selectRandomAddresses.cypher, comodo perchè in questo modo possono essere letti direttamente da LOAD CSV (per impostazione predefinita Neo4j legge file solo da $NEO4J_HOME/import)
 
-CHUNKS_DIR="$NEO4J_HOME/import/chunks"
-DATABASE_NAME="addrtrxgraph"
-DATABASE_USERNAME="yourUsername" # Da cambiare con il proprio username
-DATABASE_PASSWORD="yourPassword" # Da cambiare con la propria password
-DATABASE_BOLT_ADDRESS="yourBoltAddress" # Da cambiare con il proprio indirizzo bolt
+CHUNKS_DIR="./import/chunks"
+DATABASE_NAME="neo4j"
+DATABASE_USERNAME="neo4j" # Da cambiare con il proprio username
+DATABASE_PASSWORD="k*e%TZ2er4dBb^LV!B&o" # Da cambiare con la propria password
+DATABASE_BOLT_ADDRESS="neo4j://localhost:7687" # Da cambiare con il proprio indirizzo bolt
 QUERY_TEMPLATE_PATH="./templates/addrtrx.cypher"
 SELECT_RANDOM_ADDRESSES_QUERY_PATH="./templates/selectRandomAddresses.cypher"
 ANALYSIS_QUERIES_DIR="./templates/analysis_templates"

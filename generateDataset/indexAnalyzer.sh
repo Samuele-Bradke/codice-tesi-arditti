@@ -2,7 +2,7 @@
 
 inputFile="updateMe.txt" # File di input da processare, sostituire con il proprio file
 indexFile="chunk_index.txt"  # File indice generato precedentemente in generateDataIndexes.sh
-outputDir="$NEO4J_HOME/import/chunks" # Directory dove salvare i chunk (creata se non esiste) 
+outputDir="./import/chunks" # Directory dove salvare i chunk (creata se non esiste) 
 # NB: viene usata la directory import di Neo4j in modo che le operazioni di lettura con LOAD CSV non richiedano permessi aggiuntivi per la lettura da directory diverse 
 
 # Crea la directory di output se non esiste
