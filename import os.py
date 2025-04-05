@@ -106,11 +106,6 @@ def generate_csv_from_bitcoin_core(csv_file):
             transaction_count += int(block["nTx"])
             print(f"Processed block {block_height} with {len(block['tx'])} transactions. Total transactions: {transaction_count}.")
             block_height += 1
-
-            # Stop after processing a batch of transactions
-            if transaction_count >= TRANSACTION_BATCH_SIZE:
-                print(f"Reached batch limit of {TRANSACTION_BATCH_SIZE} transactions. Stopping...")
-                break
     except KeyboardInterrupt:
         print("Program interrupted by user. Exiting gracefully...")
     except Exception as e:
