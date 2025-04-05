@@ -78,11 +78,13 @@ def generate_csv_from_bitcoin_core(csv_file):
     # Determine the last processed block height
     last_block_height = None
     next_block_hash = None
+    transaction_count = 0
     if os.path.exists(csv_file):
         with open(csv_file, mode="r") as file:
             reader = csv.reader(file, delimiter=":")
             rows = list(reader)
             if rows:
+                transaction_count = len(rows)
                 last_row = rows[-1]
                 last_block_height = int(last_row[0].split(",")[1])  # Extract block height from the last row
 
@@ -90,7 +92,7 @@ def generate_csv_from_bitcoin_core(csv_file):
 
     print(f"Starting from block {start_block}...")
     block_height = start_block
-    transaction_count = 0
+    
 
     try:
         while True:
@@ -101,7 +103,7 @@ def generate_csv_from_bitcoin_core(csv_file):
             block = get_block(block_hash)
             next_block_hash = block["nextblockhash"] if "nextblockhash" in block else None
             write_transactions_to_csv(block, csv_file)
-            transaction_count += int(block["ntx"])
+            transaction_count += int(block["nTx"])
             print(f"Processed block {block_height} with {len(block['tx'])} transactions. Total transactions: {transaction_count}.")
             block_height += 1
 

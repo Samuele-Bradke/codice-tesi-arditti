@@ -10,7 +10,7 @@ file = "example.csv"
 # Individual queries
 CREATE_TRANSACTIONS_QUERY = """
 WITH $infos AS infos, $inputs AS inputs, $outputs AS outputs
-MERGE (t:Transaction {txId: toInteger(infos[2])})
+MERGE (t:Transaction {txId: infos[2]})
 SET t.timestamp = toInteger(infos[0]),
     t.blockId = toInteger(infos[1]),
     t.isCoinbase = infos[3] = '1',
@@ -23,7 +23,7 @@ MATCH (t:Transaction {txId: $txId})
 WITH t, $outputs AS outputs
 UNWIND range(0, size(outputs) - 1) AS outputIndex
 WITH t, split(outputs[outputIndex], ',') AS output, outputIndex
-MERGE (a:Address {addressId: toInteger(output[0])})
+MERGE (a:Address {addressId: output[0]})
 CREATE (t)-[:OUTPUT {amount: toInteger(output[1]), position: outputIndex}]->(a)
 """
 
@@ -32,8 +32,8 @@ MATCH (t:Transaction {txId: $txId})
 WITH t, $inputs AS inputs
 UNWIND inputs AS inputString
 WITH t, split(inputString, ',') AS input
-MERGE (a:Address {addressId: toInteger(input[0])})
-CREATE (a)-[:INPUT {amount: toInteger(input[1]), prevTxId: toInteger(input[2]), prevTxPos: toInteger(input[3])}]->(t)
+MERGE (a:Address {addressId: input[0]})
+CREATE (a)-[:INPUT {amount: toInteger(input[1]), prevTxId: input[2], prevTxPos: toInteger(input[3])}]->(t)
 """
 
 CHECK_TRANSACTION_EXISTS_QUERY = """
@@ -60,7 +60,7 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
             outputs = line[2].split(';')
 
             # Check if the transaction already exists
-            tx_id = int(infos[2])
+            tx_id = infos[2]
             exists_result = session.run(CHECK_TRANSACTION_EXISTS_QUERY, txId=tx_id)
             if exists_result.single():
                 print(f"Transaction {tx_id} already exists. Skipping...")
