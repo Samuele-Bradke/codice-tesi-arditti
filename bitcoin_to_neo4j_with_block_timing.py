@@ -53,7 +53,7 @@ CREATE (a)-[:INPUT {amount: toFloat(input[1]), prevTxId: input[2], prevTxPos: to
 def start_bitcoind():
     """Start the Bitcoin Core daemon."""
     print("Starting Bitcoin Core daemon...")
-    subprocess.Popen(["bitcoind", "-daemon"])
+    subprocess.Popen(["bitcoind"])
     time.sleep(5)  # Give the daemon some time to start
 
 def wait_for_rpc():
@@ -65,6 +65,9 @@ def wait_for_rpc():
                 print("Bitcoin Core RPC server is ready.")
                 return
             elif "error code: -28" in result.stderr:
+                print("Bitcoin Core is starting up... Waiting...")
+            elif "error: timeout on transient error: Could not connect to the server" in result.stderr:
+                start_bitcoind()
                 print("Bitcoin Core is starting up... Waiting...")
             else:
                 print(f"Unexpected error: {result.stderr.strip()}")
@@ -137,7 +140,8 @@ def process_blocks_to_neo4j():
 
                             # Check if the transaction already exists in the database
                             exists_result = session.run(CHECK_TRANSACTION_EXISTS_QUERY, txId=tx_id)
-                            if exists_result.single()["exists"]:
+                            if exists_result.single():
+                                print(f"Transaction {tx_id} already exists. Skipping...")
                                 continue
 
                             # Prepare transaction data
