@@ -1,10 +1,11 @@
+import time
 from neo4j import GraphDatabase
 import subprocess
 import json
 
 # Neo4j connection details
-URI = "neo4j://localhost:7687"
-AUTH = ("neo4j", "k*e%TZ2er4dBb^LV!B&o")
+URI = "neo4j+s://6ae77e28.databases.neo4j.io"
+AUTH = ("neo4j", "xSxHoQTyuj1xth3aSwbseqrl04p7R-uYv_WvwxwEepo")
 
 # Neo4j queries
 GET_LAST_BLOCK_QUERY = """
@@ -62,75 +63,80 @@ def get_block(block_hash):
 
 # Main function to process blocks and insert into Neo4j
 def process_blocks_to_neo4j():
-    next_hash=None
+    next_hash = None
     with GraphDatabase.driver(URI, auth=AUTH) as driver:
         driver.verify_connectivity()
         print("Connected to Neo4j database.")
 
-        with driver.session() as session:
-            # Get the last processed block from the database
-            last_block_result = session.run(GET_LAST_BLOCK_QUERY)
-            last_block = last_block_result.single()["lastBlock"]
-            start_block = 0 if last_block is None else last_block + 1
-
-            print(f"Starting from block {start_block}...")
-            block_height = start_block
-
+        while True:
             try:
-                while True:
-                    block_hash = next_hash if next_hash else get_block_hash(block_height)
-                    block = get_block(block_hash)
-                    next_hash = block.get("nextblockhash")
+                with driver.session() as session:
+                    # Get the last processed block from the database
+                    last_block_result = session.run(GET_LAST_BLOCK_QUERY)
+                    last_block = last_block_result.single()["lastBlock"]
+                    start_block = 0 if last_block is None else last_block + 1
 
-                    for tx in block["tx"]:
-                        tx_id = tx["txid"]
+                    print(f"Starting from block {start_block}...")
+                    block_height = start_block
 
-                        # Check if the transaction already exists in the database
-                        exists_result = session.run(CHECK_TRANSACTION_EXISTS_QUERY, txId=tx_id)
-                        if exists_result.single():
-                            print(f"Transaction {tx_id} already exists. Skipping...")
-                            continue
+                    while True:
+                        block_hash = next_hash if next_hash else get_block_hash(block_height)
+                        block = get_block(block_hash)
+                        next_hash = block.get("nextblockhash")
 
-                        # Prepare transaction data
-                        is_coinbase = "1" if len(tx["vin"]) == 1 and "coinbase" in tx["vin"][0] else "0"
-                        fee = 0  # Fee calculation requires additional logic
-                        size = tx.get("size", 0)
-                        vsize = tx.get("vsize", 0)
-                        weight = tx.get("weight", 0)
+                        for tx in block["tx"]:
+                            tx_id = tx["txid"]
 
-                        # Process inputs
-                        inputs = []
-                        for vin in tx["vin"]:
-                            if "txid" in vin:  # Regular input
-                                inputs.append(f"{vin['txid']},{vin['vout']},{vin.get('sequence', '0')}")
-                            else:  # Coinbase input
-                                inputs.append("coinbase,0,0")
+                            # Check if the transaction already exists in the database
+                            exists_result = session.run(CHECK_TRANSACTION_EXISTS_QUERY, txId=tx_id)
+                            if exists_result.single():
+                                print(f"Transaction {tx_id} already exists. Skipping...")
+                                continue
 
-                        # Process outputs
-                        outputs = []
-                        for vout in tx["vout"]:
-                            if "scriptPubKey" in vout and "hex" in vout["scriptPubKey"]:
-                                address = vout["scriptPubKey"]["hex"]
-                            else:
-                                address = "unknown"
+                            # Prepare transaction data
+                            is_coinbase = "1" if len(tx["vin"]) == 1 and "coinbase" in tx["vin"][0] else "0"
+                            fee = 0  # Fee calculation requires additional logic
+                            size = tx.get("size", 0)
+                            vsize = tx.get("vsize", 0)
+                            weight = tx.get("weight", 0)
 
-                            amount = vout["value"]
-                            script_type = vout["scriptPubKey"].get("type", "unknown") if "scriptPubKey" in vout else "unknown"
-                            outputs.append(f"{address},{amount},{script_type}")
+                            # Process inputs
+                            inputs = []
+                            for vin in tx["vin"]:
+                                if "txid" in vin:  # Regular input
+                                    inputs.append(f"{vin['txid']},{vin['vout']},{vin.get('sequence', '0')}")
+                                else:  # Coinbase input
+                                    inputs.append("coinbase,0,0")
 
-                        # Insert transaction into the database
-                        infos = [block["time"], block["height"], tx_id, is_coinbase, fee, size, vsize, weight]
-                        session.run(CREATE_TRANSACTIONS_QUERY, infos=infos, inputs=inputs, outputs=outputs)
-                        session.run(CREATE_OUTPUTS_QUERY, txId=tx_id, outputs=outputs)
-                        session.run(CREATE_INPUTS_QUERY, txId=tx_id, inputs=inputs)
+                            # Process outputs
+                            outputs = []
+                            for vout in tx["vout"]:
+                                if "scriptPubKey" in vout and "hex" in vout["scriptPubKey"]:
+                                    address = vout["scriptPubKey"]["hex"]
+                                else:
+                                    address = "unknown"
 
-                    print(f"Processed block {block_height} with {len(block['tx'])} transactions.")
-                    block_height += 1
+                                amount = vout["value"]
+                                script_type = vout["scriptPubKey"].get("type", "unknown") if "scriptPubKey" in vout else "unknown"
+                                outputs.append(f"{address},{amount},{script_type}")
 
-            except KeyboardInterrupt:
-                print("Program interrupted by user. Exiting gracefully...")
+                            # Insert transaction into the database
+                            infos = [block["time"], block["height"], tx_id, is_coinbase, fee, size, vsize, weight]
+                            session.run(CREATE_TRANSACTIONS_QUERY, infos=infos, inputs=inputs, outputs=outputs)
+                            session.run(CREATE_OUTPUTS_QUERY, txId=tx_id, outputs=outputs)
+                            session.run(CREATE_INPUTS_QUERY, txId=tx_id, inputs=inputs)
+
+                        print(f"Processed block {block_height} with {len(block['tx'])} transactions.")
+                        block_height += 1
+
             except Exception as e:
-                print(f"Error processing block {block_height}: {e}")
+                error_message = str(e)
+                if "Unable to retrieve routing information" in error_message or "TimeoutError" in error_message:
+                    print(f"Error encountered: {error_message}. Retrying in 10 seconds...")
+                    time.sleep(10)
+                else:
+                    print(f"Unexpected error: {error_message}")
+                    break
 
 # Run the script
 process_blocks_to_neo4j()
